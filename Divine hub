@@ -853,18 +853,13 @@ end
 -- Botão Kill
 KillBtn.MouseButton1Click:Connect(function()
     KillActive = not KillActive
+
     if KillActive then
         KillBtn.BackgroundColor3 = Color3.fromRGB(0,255,0) -- fundo verde
         KillBtn.TextColor3 = Color3.fromRGB(0,0,0)         -- texto preto
         KillBtn.Text = "Kill ON"
-    else
-        KillBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)   -- fundo preto
-        KillBtn.TextColor3 = Color3.fromRGB(0,255,0)       -- texto verde
-        KillBtn.Text = "Kill OFF"
-    end
-end)
 
-    if KillActive then
+        -- Lógica que estava fora
         SelectedPlayer = GetClosestKillPlayer()
         local hrp = GetPart(LocalPlayer.Character)
         if hrp then
@@ -873,6 +868,10 @@ end)
         Subiu = false
         Noclip(true)
     else
+        KillBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)   -- fundo preto
+        KillBtn.TextColor3 = Color3.fromRGB(0,255,0)       -- texto verde
+        KillBtn.Text = "Kill OFF"
+
         Subiu = false
         Noclip(false)
     end
