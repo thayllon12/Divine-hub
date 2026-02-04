@@ -21,42 +21,80 @@ local SilentActive = false
 local LOCKED = false
 local aimbot_target = nil
 local last_target = nil
-local SPEED = 350
-local UP_OFFSET = 30
-local ORBIT_RADIUS = 15
-local ORBIT_HEIGHT = 15
-local ORBIT_SPEED = 5
+-- VARIÁVEIS CONFIG
+local SPEED_TWEEN = 350
+local SPEED_KILL = 350
+local ORBIT_SPEED_TWEEN = 5
+local ORBIT_SPEED_KILL = 5
+local UP_OFFSET_TWEEN = 30
+local UP_OFFSET_KILL = 30
+local ORBIT_MODE_TWEEN = 1 -- 1=Orbita,2=Wazure,3=Estrela
+local ORBIT_MODE_KILL = 1 -- 1=Orbita,2=Wazure,3=Estrela
+local ORBIT_RADIUS = 10
+local ORBIT_HEIGHT = 5
 
-local AlturaSubida = nil
-local Subiu = false
---============================================================
 -- GUI BASE
---============================================================
+
 local Gui = Instance.new("ScreenGui", PlayerGui)
 Gui.Name = "DivineHub"
 Gui.ResetOnSpawn = false
+Gui.DisplayOrder = 2147483647 
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- BOTÃO PRINCIPAL DIVINE HUB (30x30, RGB, ARRASTÁVEL, TOGGLE MENU)
-local mainButton = Instance.new("ImageButton", Gui) -- Gui é seu DivineHub ScreenGui
-mainButton.Size = UDim2.new(0,40,0,40)
+-- BOTÃO PRINCIPAL DIVINE HUB
+local mainButton = Instance.new("ImageButton", Gui)
+mainButton.Size = UDim2.new(0,30,0,30)
 mainButton.Position = UDim2.new(0,15,0,80)
-mainButton.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+mainButton.BackgroundColor3 = Color3.fromRGB(0,255,255)
 mainButton.Image = "rbxassetid://75330746621779"
 mainButton.ImageColor3 = Color3.new(1,1,1)
 mainButton.AutoButtonColor = true
-Instance.new("UICorner", mainButton).CornerRadius = UDim.new(0,14)
+
+-- 🔥 ZINDEX ABSURDO
+mainButton.ZIndex = 2147483647
+
+-- CANTO
+local corner = Instance.new("UICorner", mainButton)
+corner.CornerRadius = UDim.new(0,10)
+
+-- BORDA
 local stroke = Instance.new("UIStroke", mainButton)
 stroke.Thickness = 3
+stroke.Color = Color3.fromRGB(0,255,255)
+stroke.ZIndex = 2147483647
 
--- RGB + PULSAR
+--RGB
 task.spawn(function()
     local h = 0
+    local lastPulse = 0
+    local pulseDuration = 1.2 -- quanto tempo o pulsar dura (segundos)
+    local normalSize = UDim2.new(0,33,0,34)
+
     while true do
-        h = (h + 0.01) % 1
-        stroke.Color = Color3.fromHSV(h,1,1)
-        mainButton.BackgroundColor3 = Color3.fromHSV((tick()*0.3)%1,1,1)
-        mainButton.Size = UDim2.new(0,40 + math.sin(tick()*3)*4,0,40 + math.sin(tick()*3)*4)
-        task.wait(0.03)
+        local now = tick()
+
+        -- RGB MAIS RÁPIDO 🔥
+        h = (h + 0.03) % 1
+        stroke.Color = Color3.fromHSV(h, 1, 1)
+        mainButton.BackgroundColor3 = Color3.fromHSV((now * 1.2) % 1, 1, 1)
+
+        -- Pulsar só de 10 em 10 segundos
+        if now - lastPulse >= 10 then
+            lastPulse = now
+        end
+
+        -- Enquanto estiver dentro do tempo do pulsar
+        if now - lastPulse <= pulseDuration then
+            local pulse = math.sin((now - lastPulse) * 10)
+            mainButton.Size = UDim2.new(
+                0, 33 + pulse * 6,
+                0, 34 + pulse * 6
+            )
+        else
+            mainButton.Size = normalSize
+        end
+
+        task.wait(0.01)
     end
 end)
 
@@ -80,7 +118,21 @@ mainButton.InputBegan:Connect(function(input)
         startMousePosMain = input.Position
         startPosMain = mainButton.Position
 
-  input.Changed:Connect(function()
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                draggingMain = false
+            end
+        end)
+    end
+end)
+
+mainButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingMain = true
+        startMousePosMain = input.Position
+        startPosMain = mainButton.Position
+
+        input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 draggingMain = false
             end
@@ -100,28 +152,171 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+--FPS GUI ULTRA TURBO EDITION
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
+local SoundService = game:GetService("SoundService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+-- Remove HUD antigo
+pcall(function()
+    local g = player.PlayerGui:FindFirstChild("FPSPingCounter")
+    if g then g:Destroy() end
+end)
+
+-- ================= GUI =================
+local gui = Instance.new("ScreenGui")
+gui.Name = "FPSPingCounter"
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 999999
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.fromOffset(150, 34)
+label.Position = UDim2.fromOffset(300, 5)
+label.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+label.BackgroundTransparency = 0.7 -- 👈 FUNDO 70% TRANSPARENTE
+label.TextScaled = true
+label.Font = Enum.Font.GothamBold
+label.BorderSizePixel = 0
+label.TextStrokeTransparency = 0
+label.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+label.RichText = true
+label.ZIndex = 999999
+label.Parent = gui
+
+-- ================= SOM =================
+local beep = Instance.new("Sound")
+beep.SoundId = "rbxassetid://17748195478" -- SOM NOVO
+beep.Volume = 1
+beep.Parent = SoundService
+
+local soundEnabled = true
+
+-- ================= FPS / PING =================
+local frames = 0
+local last = os.clock()
+local blink = false
+local wasBad = false
+
+local function getPing()
+    local net = Stats:FindFirstChild("Network")
+    if not net then return 0 end
+    local s = net:FindFirstChild("ServerStatsItem")
+    if not s then return 0 end
+    local p = s:FindFirstChild("Data Ping")
+    if not p then return 0 end
+    return tonumber(p:GetValueString():match("%d+")) or 0
+end
+
+-- FPS CORES (AJUSTADO)
+local function fpsColor(f)
+    if f >= 50 then return Color3.fromRGB(0,255,0) end        -- VERDE PURO
+    if f >= 30 then return Color3.fromRGB(255,255,0) end      -- AMARELO
+    if f >= 15 then return Color3.fromRGB(255,165,0) end      -- LARANJA
+    return Color3.fromRGB(255,0,0)                             -- VERMELHO
+end
+
+-- PING CORES (AJUSTADO)
+local function pingColor(ms)
+    if ms <= 65  then return Color3.fromRGB(0,255,0) end      -- VERDE PURO
+    if ms <= 120 then return Color3.fromRGB(255,255,0) end    -- AMARELO
+    if ms <= 180 then return Color3.fromRGB(255,165,0) end    -- LARANJA
+    return Color3.fromRGB(255,0,0)                             -- VERMELHO
+end
+
+-- ================= CHAT COMMANDS =================
+local function starts(cmd, txt)
+    return txt:sub(1, #cmd) == cmd
+end
+
+player.Chatted:Connect(function(msg)
+    msg = msg:lower()
+
+    -- LOCK / UNLOCK
+    if starts("/u", msg) then
+        draggable = false
+    elseif starts("/l", msg) then
+        draggable = true
+    end
+
+    -- SOM / UNSOM
+    if starts("/un", msg) then
+        soundEnabled = false
+    elseif starts("/s", msg) then
+        soundEnabled = true
+    end
+end)
+
+-- ================= LOOP =================
+RunService.RenderStepped:Connect(function()
+    frames += 1
+
+    if os.clock() - last >= 1 then
+        local fps = frames
+        local ping = getPing()
+
+        local fc = fpsColor(fps)
+        local pc = pingColor(ping)
+
+        -- 🔥 CONDIÇÃO DO GRITO
+        local bad = (fps <= 10) or (ping >= 200)
+        blink = not blink
+
+        if bad then
+            label.BackgroundColor3 =
+                blink and Color3.fromRGB(255,0,0) or Color3.fromRGB(0,0,0)
+
+            if not wasBad and soundEnabled then
+                beep:Play()
+            end
+        else
+            label.BackgroundColor3 = Color3.fromRGB(0,0,0)
+        end
+
+        wasBad = bad
+
+        label.Text = string.format(
+            "<font color='rgb(%d,%d,%d)'>FPS %d</font> | <font color='rgb(%d,%d,%d)'>%d ms</font>",
+            fc.R*255, fc.G*255, fc.B*255, fps,
+            pc.R*255, pc.G*255, pc.B*255, ping
+        )
+
+        frames = 0
+        last = os.clock()
+    end
+end)
 
 -- MENU
 local MenuFrame = Instance.new("Frame", Gui)
 MenuFrame.Size = UDim2.new(0,420,0,300)
-MenuFrame.Position = UDim2.new(0.5,-210,0.5,-150)
-MenuFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+MenuFrame.Position = UDim2.new(0.5,-210,0.5,-170)
+MenuFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+MenuFrame.BackgroundTransparency = 0.5
 MenuFrame.Visible = false
 Instance.new("UICorner", MenuFrame).CornerRadius = UDim.new(0,14)
+local stroke = Instance.new("UIStroke", MenuFrame)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(0,255,0)
+MenuFrame.Active = true
+MenuFrame.Draggable = true
 
 -- TOGGLE MENU
 mainButton.MouseButton1Click:Connect(function()
     MenuFrame.Visible = not MenuFrame.Visible
 end)
 
---============================================================
 -- BOTÕES
---============================================================
+
 local function AddBtn(parent,text,pos)
 	local b = Instance.new("TextButton", parent)
 	b.Size = UDim2.new(0,120,0,45)
 	b.Position = pos
-	b.BackgroundColor3 = Color3.fromRGB(120,10,10)
+	b.BackgroundColor3 = Color3.fromRGB(255,0,0)
 	b.Text = text
 	b.TextColor3 = Color3.new(1,1,1)
 	b.Font = Enum.Font.GothamBold
@@ -137,6 +332,36 @@ local FastBtn = AddBtn(MenuFrame,"Fast OFF",UDim2.new(0,15,0,140))
 local SelectBtn = AddBtn(MenuFrame,"Selecionar",UDim2.new(0,15,0,80))
 local RemoveBtn = AddBtn(MenuFrame,"Remover",UDim2.new(0,150,0,80))
 local MiscBtn = AddBtn(MenuFrame, "Misc", UDim2.new(0,285,0,80))
+local ConfigBtn = AddBtn(MenuFrame, "Config", UDim2.new(0,150,0,140))
+
+local ConfigFrame = Instance.new("Frame", Gui)
+ConfigFrame.Size = UDim2.new(0,300,0,400)
+ConfigFrame.Position = UDim2.new(0.5,-150,0.5,-200)
+ConfigFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+ConfigFrame.Visible = false
+Instance.new("UICorner", ConfigFrame).CornerRadius = UDim.new(0,14)
+local stroke = Instance.new("UIStroke", ConfigFrame)
+stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(0,255,0)
+ConfigFrame.Active = true
+ConfigFrame.Draggable = true
+
+local CloseBtn = Instance.new("TextButton", ConfigFrame)
+CloseBtn.Size = UDim2.new(0,30,0,30)
+CloseBtn.Position = UDim2.new(0,10,0,10)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.new(1,0,0)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(20,20,20)
+CloseBtn.Font = Enum.Font.SourceSansBold
+CloseBtn.TextSize = 18
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0,5)
+CloseBtn.MouseButton1Click:Connect(function()
+    ConfigFrame.Visible = false
+end)
+
+ConfigBtn.MouseButton1Click:Connect(function()
+    ConfigFrame.Visible = not ConfigFrame.Visible
+end)
 
 -- LABEL ALVO
 local SelectedLabel = Instance.new("TextLabel", MenuFrame)
@@ -155,7 +380,7 @@ HUD.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", HUD)
 frame.Size = UDim2.new(0,150,0,50)
-frame.Position = UDim2.new(0.5, -75, 0, 50)
+frame.Position = UDim2.new(0,527,0,-47)
 frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 frame.BackgroundTransparency = 0.4
 frame.BorderSizePixel = 0
@@ -183,38 +408,73 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
---============================================================
 -- LISTA DE JOGADORES
---============================================================
-local PlayerListFrame = Instance.new("Frame", Gui)
-PlayerListFrame.Size = UDim2.new(0,210,0,320)
-PlayerListFrame.Position = UDim2.new(0.5,140,0.5,-160)
-PlayerListFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-PlayerListFrame.Visible = false
-Instance.new("UICorner", PlayerListFrame)
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
+-- GARANTE ZINDEX CORRETO NA SCREEN GUI
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- FRAME PRINCIPAL
+local PlayerListFrame = Instance.new("Frame", Gui)
+PlayerListFrame.Size = UDim2.new(0,220,0,320)
+PlayerListFrame.Position = UDim2.new(0.5,140,0.5,-200)
+PlayerListFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+PlayerListFrame.BackgroundTransparency = 0.5
+PlayerListFrame.Visible = false
+PlayerListFrame.ZIndex = 999999
+
+-- CANTOS
+local FrameCorner = Instance.new("UICorner", PlayerListFrame)
+FrameCorner.CornerRadius = UDim.new(0,14)
+
+-- BORDA
+local FrameStroke = Instance.new("UIStroke", PlayerListFrame)
+FrameStroke.Thickness = 2
+FrameStroke.Color = Color3.fromRGB(0,255,0)
+FrameStroke.ZIndex = 999999
+
+-- SCROLL
 local Scrolling = Instance.new("ScrollingFrame", PlayerListFrame)
 Scrolling.Size = UDim2.new(1,0,1,0)
 Scrolling.CanvasSize = UDim2.new(0,0,0,0)
 Scrolling.ScrollBarThickness = 6
+Scrolling.BackgroundTransparency = 1
+Scrolling.AutomaticCanvasSize = Enum.AutomaticSize.None
+Scrolling.ZIndex = 999999
 
+-- LIST LAYOUT
 local UIList = Instance.new("UIListLayout", Scrolling)
-UIList.Padding = UDim.new(0,6)
+UIList.Padding = UDim.new(0,8)
+UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
+-- ATUALIZAR LISTA
 local function UpdateList()
 	for _,v in pairs(Scrolling:GetChildren()) do
-		if v:IsA("TextButton") then v:Destroy() end
+		if v:IsA("TextButton") then
+			v:Destroy()
+		end
 	end
+
 	for _,plr in pairs(Players:GetPlayers()) do
 		if plr ~= LocalPlayer then
-			local b = Instance.new("TextButton", Scrolling)
-			b.Size = UDim2.new(1,-10,0,35)
-			b.BackgroundColor3 = Color3.fromRGB(50,50,50)
-			b.Text = plr.DisplayName
-			b.TextColor3 = Color3.new(1,1,1)
-			b.Font = Enum.Font.GothamBold
-			Instance.new("UICorner", b)
-	b.MouseButton1Click:Connect(function()
+			local Button = Instance.new("TextButton", Scrolling)
+			Button.Size = UDim2.new(1,-16,0,42)
+			Button.BackgroundColor3 = Color3.fromRGB(0,0,0)
+			Button.AutoButtonColor = false
+			Button.ZIndex = 999999
+
+			Button.Text = plr.DisplayName
+			Button.TextColor3 = Color3.fromRGB(0,255,0)
+			Button.Font = Enum.Font.GothamBold
+			Button.TextSize = 15
+			Button.TextXAlignment = Enum.TextXAlignment.Center
+			Button.TextYAlignment = Enum.TextYAlignment.Center
+
+			local Corner = Instance.new("UICorner", Button)
+			Corner.CornerRadius = UDim.new(0,10)						
+
+			Button.MouseButton1Click:Connect(function()
 				SelectedPlayer = plr
 				SelectedLabel.Text = "Alvo: "..plr.DisplayName
 				PlayerListFrame.Visible = false
@@ -222,10 +482,14 @@ local function UpdateList()
 		end
 	end
 
-task.wait()
-	Scrolling.CanvasSize = UDim2.new(0,0,0,UIList.AbsoluteContentSize.Y+10)
+	task.wait()
+	Scrolling.CanvasSize = UDim2.new(
+		0,0,
+		0, UIList.AbsoluteContentSize.Y + 12
+	)
 end
 
+-- BOTÕES EXTERNOS
 SelectBtn.MouseButton1Click:Connect(function()
 	PlayerListFrame.Visible = not PlayerListFrame.Visible
 	UpdateList()
