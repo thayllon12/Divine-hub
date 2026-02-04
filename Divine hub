@@ -1,3 +1,24 @@
+-- inicialização 🥵
+
+local SoundService = game:GetService("SoundService")
+
+local introSound = Instance.new("Sound")
+introSound.SoundId = "rbxassetid://91271761310463" -- teu ID 😈
+introSound.Volume = 1
+introSound.Looped = false
+introSound.Parent = SoundService
+
+-- toca ao executar o script
+introSound:Play()
+
+-- para e limpa depois de 5 segundos
+task.delay(10, function()
+	if introSound.IsPlaying then
+		introSound:Stop()
+	end
+	introSound:Destroy()
+end)
+
 --// SERVIÇOS
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -49,6 +70,8 @@ mainButton.BackgroundColor3 = Color3.fromRGB(0,255,255)
 mainButton.Image = "rbxassetid://75330746621779"
 mainButton.ImageColor3 = Color3.new(1,1,1)
 mainButton.AutoButtonColor = true
+mainButton.Active = true
+mainButton.Draggable = true
 
 -- 🔥 ZINDEX ABSURDO
 mainButton.ZIndex = 2147483647
@@ -63,93 +86,63 @@ stroke.Thickness = 3
 stroke.Color = Color3.fromRGB(0,255,255)
 stroke.ZIndex = 2147483647
 
---RGB
+--  RGB 
+
+-- CONFIG
+local normalSize = UDim2.new(0,33,0,34)
+local pulseDuration = 0.2 -- tempo do pulso
+local pulsePower = 6      -- força do pulso
+
+-- ESTADOS
+local pulsando = false
+local pulseStart = 0
+
+-- SOM DE CLIQUE 🔊
+local clickSound = Instance.new("Sound")
+clickSound.SoundId = "rbxassetid://1673280232"
+clickSound.Volume = 1
+clickSound.Parent = mainButton
+
+-- CLIQUE DO BOTÃO
+mainButton.MouseButton1Click:Connect(function()
+	-- toca som
+	clickSound:Play()
+
+	-- ativa pulso
+	pulsando = true
+	pulseStart = tick()
+end)
+
+-- LOOP RGB + PULSO
 task.spawn(function()
-    local h = 0
-    local lastPulse = 0
-    local pulseDuration = 1.2 -- quanto tempo o pulsar dura (segundos)
-    local normalSize = UDim2.new(0,33,0,34)
+	local h = 0
 
-    while true do
-        local now = tick()
+	while true do
+		local now = tick()
 
-        -- RGB MAIS RÁPIDO 🔥
-        h = (h + 0.03) % 1
-        stroke.Color = Color3.fromHSV(h, 1, 1)
-        mainButton.BackgroundColor3 = Color3.fromHSV((now * 1.2) % 1, 1, 1)
+		-- RGB rápido 🔥
+		h = (h + 0.03) % 1
+		stroke.Color = Color3.fromHSV(h, 1, 1)
+		mainButton.BackgroundColor3 = Color3.fromHSV((now * 1.2) % 1, 1, 1)
 
-        -- Pulsar só de 10 em 10 segundos
-        if now - lastPulse >= 10 then
-            lastPulse = now
-        end
+		-- PULSO (só quando clica)
+		if pulsando then
+			local t = now - pulseStart
 
-        -- Enquanto estiver dentro do tempo do pulsar
-        if now - lastPulse <= pulseDuration then
-            local pulse = math.sin((now - lastPulse) * 10)
-            mainButton.Size = UDim2.new(
-                0, 33 + pulse * 6,
-                0, 34 + pulse * 6
-            )
-        else
-            mainButton.Size = normalSize
-        end
+			if t <= pulseDuration then
+				local pulse = math.sin(t * 12)
+				mainButton.Size = UDim2.new(
+					0, 33 + pulse * pulsePower,
+					0, 34 + pulse * pulsePower
+				)
+			else
+				pulsando = false
+				mainButton.Size = normalSize
+			end
+		end
 
-        task.wait(0.01)
-    end
-end)
-
--- SISTEMA DE ARRASTAR
-local draggingMain = false
-local dragInputMain, startPosMain, startMousePosMain
-
-local function updateMain(input)
-    local delta = input.Position - startMousePosMain
-    mainButton.Position = UDim2.new(
-        startPosMain.X.Scale,
-        startPosMain.X.Offset + delta.X,
-        startPosMain.Y.Scale,
-        startPosMain.Y.Offset + delta.Y
-    )
-end
-
-mainButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        draggingMain = true
-        startMousePosMain = input.Position
-        startPosMain = mainButton.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                draggingMain = false
-            end
-        end)
-    end
-end)
-
-mainButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        draggingMain = true
-        startMousePosMain = input.Position
-        startPosMain = mainButton.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                draggingMain = false
-            end
-        end)
-    end
-end)
-
-mainButton.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInputMain = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInputMain and draggingMain then
-        updateMain(input)
-    end
+		task.wait(0.01)
+	end
 end)
 
 --FPS GUI ULTRA TURBO EDITION
@@ -189,7 +182,7 @@ label.RichText = true
 label.ZIndex = 999999
 label.Parent = gui
 
--- ================= SOM =================
+-- SOM 
 local beep = Instance.new("Sound")
 beep.SoundId = "rbxassetid://17748195478" -- SOM NOVO
 beep.Volume = 1
@@ -197,7 +190,7 @@ beep.Parent = SoundService
 
 local soundEnabled = true
 
--- ================= FPS / PING =================
+-- FPS / PING 
 local frames = 0
 local last = os.clock()
 local blink = false
@@ -229,7 +222,7 @@ local function pingColor(ms)
     return Color3.fromRGB(255,0,0)                             -- VERMELHO
 end
 
--- ================= CHAT COMMANDS =================
+-- CHAT COMMANDS 
 local function starts(cmd, txt)
     return txt:sub(1, #cmd) == cmd
 end
@@ -252,7 +245,7 @@ player.Chatted:Connect(function(msg)
     end
 end)
 
--- ================= LOOP =================
+-- LOOP 
 RunService.RenderStepped:Connect(function()
     frames += 1
 
@@ -293,10 +286,10 @@ end)
 
 -- MENU
 local MenuFrame = Instance.new("Frame", Gui)
-MenuFrame.Size = UDim2.new(0,420,0,300)
+MenuFrame.Size = UDim2.new(0,420,0,305)
 MenuFrame.Position = UDim2.new(0.5,-210,0.5,-170)
 MenuFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
-MenuFrame.BackgroundTransparency = 0.5
+MenuFrame.BackgroundTransparency = 0.2
 MenuFrame.Visible = false
 Instance.new("UICorner", MenuFrame).CornerRadius = UDim.new(0,14)
 local stroke = Instance.new("UIStroke", MenuFrame)
@@ -304,47 +297,131 @@ stroke.Thickness = 2
 stroke.Color = Color3.fromRGB(0,255,0)
 MenuFrame.Active = true
 MenuFrame.Draggable = true
+-- cadeado 🔓 
+local DragEnabled = true
+
+MenuFrame.Active = true
+MenuFrame.Draggable = true
+
+local DragBtn = Instance.new("TextButton", MenuFrame)
+DragBtn.Size = UDim2.new(0,20,0,20)
+DragBtn.Position = UDim2.new(1,-28,0,3)
+DragBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+DragBtn.BackgroundTransparency = 0.5
+DragBtn.Text = "🔓"
+DragBtn.TextColor3 = Color3.fromRGB(255,255,255)
+DragBtn.Font = Enum.Font.GothamBold
+DragBtn.TextSize = 22
+DragBtn.ZIndex = MenuFrame.ZIndex + 1
+Instance.new("UICorner", DragBtn).CornerRadius = UDim.new(0,6)
+
+DragBtn.MouseButton1Click:Connect(function()
+	DragEnabled = not DragEnabled
+	MenuFrame.Draggable = DragEnabled
+
+	if DragEnabled then
+		DragBtn.Text = "🔓"
+		DragBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+		DragBtn.BackgroundTransparency = 0.5
+		DragBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	else
+		DragBtn.Text = "🔒"
+		DragBtn.BackgroundColor3 = Color3.fromRGB(0,255,0)
+		DragBtn.BackgroundTransparency = 0
+		DragBtn.TextColor3 = Color3.fromRGB(0,0,0)
+	end
+end)
 
 -- TOGGLE MENU
 mainButton.MouseButton1Click:Connect(function()
     MenuFrame.Visible = not MenuFrame.Visible
 end)
 
--- BOTÕES
+local SoundService = game:GetService("SoundService")
 
-local function AddBtn(parent,text,pos)
+local clickSound = Instance.new("Sound")
+clickSound.SoundId = "rbxassetid://535716488"
+clickSound.Volume = 1
+clickSound.Parent = SoundService
+
+local function AddBtn(parent, text, pos)
 	local b = Instance.new("TextButton", parent)
 	b.Size = UDim2.new(0,120,0,45)
 	b.Position = pos
-	b.BackgroundColor3 = Color3.fromRGB(255,0,0)
+	b.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	b.Text = text
-	b.TextColor3 = Color3.new(1,1,1)
+	b.TextColor3 = Color3.fromRGB(1, 255, 1)
 	b.Font = Enum.Font.GothamBold
 	b.TextSize = 15
+	b.AutoButtonColor = true
 	Instance.new("UICorner", b).CornerRadius = UDim.new(0,10)
+	b.MouseButton1Click:Connect(function()
+		clickSound:Play()
+	end)
 	return b
 end
-
-local TweenBtn = AddBtn(MenuFrame,"Tween OFF",UDim2.new(0,15,0,20))
-local SilentBtn = AddBtn(MenuFrame,"Silent OFF",UDim2.new(0,150,0,20))
-local KillBtn = AddBtn(MenuFrame,"Kill OFF",UDim2.new(0,285,0,20))
-local FastBtn = AddBtn(MenuFrame,"Fast OFF",UDim2.new(0,15,0,140))
-local SelectBtn = AddBtn(MenuFrame,"Selecionar",UDim2.new(0,15,0,80))
-local RemoveBtn = AddBtn(MenuFrame,"Remover",UDim2.new(0,150,0,80))
-local MiscBtn = AddBtn(MenuFrame, "Misc", UDim2.new(0,285,0,80))
-local ConfigBtn = AddBtn(MenuFrame, "Config", UDim2.new(0,150,0,140))
+local TweenBtn = AddBtn(MenuFrame,"Tween OFF",UDim2.new(0,15,0,30))
+local SilentBtn = AddBtn(MenuFrame,"Aim Bot OFF",UDim2.new(0,150,0,30))
+local KillBtn = AddBtn(MenuFrame,"Kill OFF",UDim2.new(0,285,0,30))
+local FastBtn = AddBtn(MenuFrame,"Fast OFF",UDim2.new(0,285,0,90))
+local SelectBtn = AddBtn(MenuFrame,"Selecionar",UDim2.new(0,15,0,90))
+local RemoveBtn = AddBtn(MenuFrame,"Remover",UDim2.new(0,150,0,90))
+local MiscBtn = AddBtn(MenuFrame,"Misc",UDim2.new(0,15,0,150))
+local ConfigBtn = AddBtn(MenuFrame,"Config",UDim2.new(0,285,0,150))
+local AuraBtn = AddBtn(MenuFrame,"Aura 🍌 OFF",UDim2.new(0,150,0,150))
 
 local ConfigFrame = Instance.new("Frame", Gui)
 ConfigFrame.Size = UDim2.new(0,300,0,400)
 ConfigFrame.Position = UDim2.new(0.5,-150,0.5,-200)
 ConfigFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 ConfigFrame.Visible = false
+ConfigFrame.Active = true
+ConfigFrame.Draggable = true
+
+local DragEnabled = true
+
+local DragBtn = Instance.new("TextButton", ConfigFrame)
+DragBtn.Size = UDim2.new(0,20,0,20)
+DragBtn.Position = UDim2.new(1,-28,0,0)
+DragBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+DragBtn.BackgroundTransparency = 0.5
+DragBtn.Text = "🔓"
+DragBtn.TextColor3 = Color3.fromRGB(255,255,255)
+DragBtn.Font = Enum.Font.GothamBold
+DragBtn.TextSize = 22
+DragBtn.ZIndex = ConfigFrame.ZIndex + 1
+Instance.new("UICorner", DragBtn).CornerRadius = UDim.new(0,6)
+
+ConfigFrame.Draggable = true
+
+DragBtn.MouseButton1Click:Connect(function()
+	DragEnabled = not DragEnabled
+	ConfigFrame.Draggable = DragEnabled
+
+	if DragEnabled then
+		DragBtn.Text = "🔓"
+		DragBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+		DragBtn.BackgroundTransparency = 0.5
+		DragBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	else
+		DragBtn.Text = "🔒"
+		DragBtn.BackgroundColor3 = Color3.fromRGB(0,255,0)
+		DragBtn.BackgroundTransparency = 0.5
+		DragBtn.TextColor3 = Color3.fromRGB(0,0,0)
+	end
+end)
 Instance.new("UICorner", ConfigFrame).CornerRadius = UDim.new(0,14)
+
 local stroke = Instance.new("UIStroke", ConfigFrame)
 stroke.Thickness = 2
 stroke.Color = Color3.fromRGB(0,255,0)
-ConfigFrame.Active = true
-ConfigFrame.Draggable = true
+
+local SoundService = game:GetService("SoundService")
+
+local clickSound = Instance.new("Sound")
+clickSound.SoundId = "rbxassetid://535716488"
+clickSound.Volume = 1
+clickSound.Parent = SoundService
 
 local CloseBtn = Instance.new("TextButton", ConfigFrame)
 CloseBtn.Size = UDim2.new(0,30,0,30)
@@ -355,12 +432,16 @@ CloseBtn.BackgroundColor3 = Color3.fromRGB(20,20,20)
 CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.TextSize = 18
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0,5)
+
 CloseBtn.MouseButton1Click:Connect(function()
-    ConfigFrame.Visible = false
+	clickSound:Play()
+	ConfigFrame.Visible = false
 end)
 
 ConfigBtn.MouseButton1Click:Connect(function()
+    clickSound:Play()
     ConfigFrame.Visible = not ConfigFrame.Visible
+    MenuFrame.Visible = false
 end)
 
 -- LABEL ALVO
@@ -369,7 +450,7 @@ SelectedLabel.Size = UDim2.new(1,0,0,30)
 SelectedLabel.Position = UDim2.new(0,0,0,250)
 SelectedLabel.BackgroundTransparency = 1
 SelectedLabel.Text = "Alvo: Nenhum"
-SelectedLabel.TextColor3 = Color3.new(1,255,1)
+SelectedLabel.TextColor3 = Color3.fromRGB(1, 255, 1)
 SelectedLabel.Font = Enum.Font.GothamBold
 SelectedLabel.TextSize = 16
 
@@ -411,11 +492,15 @@ end)
 -- LISTA DE JOGADORES
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local SoundService = game:GetService("SoundService")
 
--- GARANTE ZINDEX CORRETO NA SCREEN GUI
+local clickSound = Instance.new("Sound")
+clickSound.SoundId = "rbxassetid://535716488"
+clickSound.Volume = 1
+clickSound.Parent = SoundService
+
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- FRAME PRINCIPAL
 local PlayerListFrame = Instance.new("Frame", Gui)
 PlayerListFrame.Size = UDim2.new(0,220,0,320)
 PlayerListFrame.Position = UDim2.new(0.5,140,0.5,-200)
@@ -424,17 +509,14 @@ PlayerListFrame.BackgroundTransparency = 0.5
 PlayerListFrame.Visible = false
 PlayerListFrame.ZIndex = 999999
 
--- CANTOS
 local FrameCorner = Instance.new("UICorner", PlayerListFrame)
 FrameCorner.CornerRadius = UDim.new(0,14)
 
--- BORDA
 local FrameStroke = Instance.new("UIStroke", PlayerListFrame)
 FrameStroke.Thickness = 2
 FrameStroke.Color = Color3.fromRGB(0,255,0)
 FrameStroke.ZIndex = 999999
 
--- SCROLL
 local Scrolling = Instance.new("ScrollingFrame", PlayerListFrame)
 Scrolling.Size = UDim2.new(1,0,1,0)
 Scrolling.CanvasSize = UDim2.new(0,0,0,0)
@@ -443,22 +525,21 @@ Scrolling.BackgroundTransparency = 1
 Scrolling.AutomaticCanvasSize = Enum.AutomaticSize.None
 Scrolling.ZIndex = 999999
 
--- LIST LAYOUT
 local UIList = Instance.new("UIListLayout", Scrolling)
 UIList.Padding = UDim.new(0,8)
 UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
--- ATUALIZAR LISTA
 local function UpdateList()
-	for _,v in pairs(Scrolling:GetChildren()) do
+	for _, v in pairs(Scrolling:GetChildren()) do
 		if v:IsA("TextButton") then
 			v:Destroy()
 		end
 	end
 
-	for _,plr in pairs(Players:GetPlayers()) do
+	for _, plr in pairs(Players:GetPlayers()) do
 		if plr ~= LocalPlayer then
 			local Button = Instance.new("TextButton", Scrolling)
+
 			Button.Size = UDim2.new(1,-16,0,42)
 			Button.BackgroundColor3 = Color3.fromRGB(0,0,0)
 			Button.AutoButtonColor = false
@@ -472,24 +553,24 @@ local function UpdateList()
 			Button.TextYAlignment = Enum.TextYAlignment.Center
 
 			local Corner = Instance.new("UICorner", Button)
-			Corner.CornerRadius = UDim.new(0,10)						
+			Corner.CornerRadius = UDim.new(0,10)
 
 			Button.MouseButton1Click:Connect(function()
+				clickSound:Play()
 				SelectedPlayer = plr
 				SelectedLabel.Text = "Alvo: "..plr.DisplayName
 				PlayerListFrame.Visible = false
 			end)
+
+			task.wait()
+			Scrolling.CanvasSize = UDim2.new(
+				0,0,
+				0, UIList.AbsoluteContentSize.Y + 12
+			)
 		end
 	end
-
-	task.wait()
-	Scrolling.CanvasSize = UDim2.new(
-		0,0,
-		0, UIList.AbsoluteContentSize.Y + 12
-	)
 end
 
--- BOTÕES EXTERNOS
 SelectBtn.MouseButton1Click:Connect(function()
 	PlayerListFrame.Visible = not PlayerListFrame.Visible
 	UpdateList()
@@ -500,12 +581,9 @@ RemoveBtn.MouseButton1Click:Connect(function()
 	SelectedLabel.Text = "Alvo: Nenhum"
 end)
 
---============================================================
--- FUNÇÕES BASE
---============================================================
 -- FUNÇÃO GET PART
 local function GetPart(char)
-    return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
 end
 
 -- VARIÁVEIS DE NOCOLIP
@@ -513,224 +591,236 @@ local noclipConnection = nil
 local originalCollisionStates = {}
 
 local function Noclip(state)
-    local char = LocalPlayer.Character
-    if not char then return end
-    if state then
-        for _,v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") then
-                originalCollisionStates[v] = v.CanCollide
-                v.CanCollide = false
-            end
-        end
-    else
-        for part,collide in pairs(originalCollisionStates) do
-            if part and part.Parent then
-                part.CanCollide = collide
-            end
-        end
-        originalCollisionStates = {}
-    end
+local char = LocalPlayer.Character
+if not char then return end
+if state then
+for _,v in pairs(char:GetDescendants()) do
+if v:IsA("BasePart") then
+originalCollisionStates[v] = v.CanCollide
+v.CanCollide = false
+end
+end
+else
+for part,collide in pairs(originalCollisionStates) do
+if part and part.Parent then
+part.CanCollide = collide
+end
+end
+originalCollisionStates = {}
+end
 end
 
---============================================================
--- TWEEN (O QUE VOCÊ MANDOU)
---============================================================
+-- CONFIG FRAME 
+
+ConfigFrame.Size = UDim2.new(0,400,0,310)
+ConfigFrame.Position = UDim2.new(0.5,-200,0.5,-170)
+ConfigFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+ConfigFrame.Visible = false
+ConfigFrame.BackgroundTransparency = 0.5
+Instance.new("UICorner", ConfigFrame).CornerRadius = UDim.new(0,14)
+
+--// BOTÕES DE ORBITA
+local SoundService = game:GetService("SoundService")
+
+local clickSound = Instance.new("Sound")
+clickSound.SoundId = "rbxassetid://535716488"
+clickSound.Volume = 1
+clickSound.Parent = SoundService
+
+local function criarBotaoModo(parent, texto, pos, callback)
+	local b = Instance.new("TextButton", parent)
+	b.Size = UDim2.new(0,100,0,30)
+	b.Position = pos
+	b.BackgroundColor3 = Color3.fromRGB(100,100,100)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 14
+	b.Text = texto
+	Instance.new("UICorner", b)
+
+	b.MouseButton1Click:Connect(function()
+		clickSound:Play()
+		callback()
+
+		for _, v in pairs(parent:GetChildren()) do
+			if v:IsA("TextButton") then
+				v.BackgroundColor3 = Color3.fromRGB(100,100,100)
+			end
+		end
+
+		b.BackgroundColor3 = Color3.fromRGB(0,150,255)
+	end)
+
+	return b
+end
+
+-- Tween modos
+
+local TweenModoFrame = Instance.new("Frame", ConfigFrame)
+TweenModoFrame.Size = UDim2.new(0,380,0,40) -- mais largo
+TweenModoFrame.Position = UDim2.new(0,10,0,210)
+TweenModoFrame.BackgroundTransparency = 1
+
+local TweenOrbitaBtn = criarBotaoModo(TweenModoFrame,"Orbita",UDim2.new(0,0,0,0),function() ORBIT_MODE_TWEEN = 1 end)
+local TweenWazureBtn = criarBotaoModo(TweenModoFrame,"Wazure",UDim2.new(0,130,0,0),function() ORBIT_MODE_TWEEN = 2 end)
+local TweenEstrelaBtn = criarBotaoModo(TweenModoFrame,"Estrela",UDim2.new(0,260,0,0),function() ORBIT_MODE_TWEEN = 3 end)
+
+-- Kill modos
+local KillModoFrame = Instance.new("Frame", ConfigFrame)
+KillModoFrame.Size = UDim2.new(0,380,0,40)
+KillModoFrame.Position = UDim2.new(0,10,0,260)
+KillModoFrame.BackgroundTransparency = 1
+
+local KillOrbitaBtn = criarBotaoModo(KillModoFrame,"Orbita",UDim2.new(0,0,0,0),function() ORBIT_MODE_KILL = 1 end)
+local KillWazureBtn = criarBotaoModo(KillModoFrame,"Wazure",UDim2.new(0,130,0,0),function() ORBIT_MODE_KILL = 2 end)
+local KillEstrelaBtn = criarBotaoModo(KillModoFrame,"Estrela",UDim2.new(0,260,0,0),function() ORBIT_MODE_KILL = 3 end)
+
+--// SLIDERS ESTILO NOVO
+local function criarSlider(nome, posY, min, max, valorInicial, callback)
+local label = Instance.new("TextLabel", ConfigFrame)
+label.Size = UDim2.new(1,-20,0,20)
+label.Position = UDim2.new(0,10,0,posY)
+label.Text = nome.." ("..valorInicial..")"
+label.TextColor3 = Color3.new(1,1,1)
+label.BackgroundTransparency = 1
+label.Font = Enum.Font.SourceSansBold
+label.TextSize = 13
+
+local barra = Instance.new("Frame", ConfigFrame)  
+barra.Size = UDim2.new(1,-20,0,14)  
+barra.Position = UDim2.new(0,10,0,posY+22)  
+barra.BackgroundColor3 = Color3.fromRGB(70,70,70)  
+
+local fill = Instance.new("Frame", barra)  
+fill.Size = UDim2.new((valorInicial-min)/(max-min),0,1,0)  
+fill.BackgroundColor3 = Color3.fromRGB(0,170,255)  
+
+local segurando = false  
+barra.InputBegan:Connect(function(input)  
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
+        segurando = true  
+    end  
+end)  
+UserInputService.InputEnded:Connect(function(input)  
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then  
+        segurando = false  
+    end  
+end)  
+UserInputService.InputChanged:Connect(function(input)  
+    if segurando and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then  
+        local pos = math.clamp((input.Position.X - barra.AbsolutePosition.X) / barra.AbsoluteSize.X, 0, 1)  
+        fill.Size = UDim2.new(pos,0,1,0)  
+        local value = math.floor(min + (max-min) * pos)  
+        label.Text = nome.." ("..value..")"  
+        callback(value)  
+    end  
+end)  
+return fill
+
+end
+
+-- SLIDERS
+criarSlider("Velocidade Tween", 20, 50, 500, SPEED_TWEEN, function(v) SPEED_TWEEN = v end)
+criarSlider("Velocidade Kill", 70, 50, 500, SPEED_KILL, function(v) SPEED_KILL = v end)
+criarSlider("Velocidade Órbita", 120, 5, 500, ORBIT_SPEED_TWEEN, function(v) ORBIT_SPEED_TWEEN=v; ORBIT_SPEED_KILL=v end)
+criarSlider("Altura Subida", 170, 0, 80, UP_OFFSET_TWEEN, function(v) UP_OFFSET_TWEEN=v; UP_OFFSET_KILL=v end)
 
 -- TWEEN BOTÃO
+
 TweenBtn.MouseButton1Click:Connect(function()
-	if not SelectedPlayer then return end
-	TweenActive = not TweenActive
-	TweenBtn.Text = TweenActive and "Tween ON" or "Tween OFF"
-	TweenBtn.BackgroundColor3 = TweenActive and Color3.fromRGB(20,120,20) or Color3.fromRGB(120,10,10)
+    if not SelectedPlayer then return end
 
-if TweenActive then
-		local hrp = GetPart(LocalPlayer.Character)
-		if hrp then
-			AlturaSubida = hrp.Position.Y + UP_OFFSET
-		end
-		Subiu = false
-		Noclip(true)
-	else
-		Subiu = false
-		Noclip(false)
-	end
+    TweenActive = not TweenActive
+    if TweenActive then
+        TweenBtn.BackgroundColor3 = Color3.fromRGB(0,255,0)  -- fundo verde
+        TweenBtn.TextColor3 = Color3.fromRGB(0,0,0)          -- texto preto
+        TweenBtn.Text = "Tween ON"
+    else
+        TweenBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)    -- fundo preto
+        TweenBtn.TextColor3 = Color3.fromRGB(0,255,0)        -- texto verde
+        TweenBtn.Text = "Tween OFF"
+    end
 end)
 
--- LOOP DO TWEEN
+if TweenActive then  
+	local hrp = GetPart(LocalPlayer.Character)  
+	if hrp then  
+		AlturaSubida = hrp.Position.Y + UP_OFFSET_TWEEN  
+	end  
+	Subiu = false  
+	Noclip(true)  
+else  
+	Subiu = false  
+	Noclip(false)  
+end
+
 RunService.Heartbeat:Connect(function(dt)
-	if not TweenActive then return end
-	if not SelectedPlayer or not SelectedPlayer.Character or not SelectedPlayer.Character:FindFirstChildOfClass("Humanoid") 
-		or SelectedPlayer.Character.Humanoid.Health <= 0 then
-		Subiu = false
-		for _,plr in pairs(Players:GetPlayers()) do
-			if plr ~= LocalPlayer then
-				SelectedPlayer = plr
-				break
-			end
-		end
-		return
-	end
-
-local hrp = GetPart(LocalPlayer.Character)
-	local targetHRP = GetPart(SelectedPlayer.Character)
-	if not hrp or not targetHRP then return end
-	-- SUBIDA INICIAL
-	if not Subiu and AlturaSubida then
-		local destino = Vector3.new(hrp.Position.X, AlturaSubida, hrp.Position.Z)
-		local move = destino - hrp.Position
-		if move.Magnitude < 1 then
-			Subiu = true
-		else
-			hrp.CFrame = hrp.CFrame + move.Unit * math.min(move.Magnitude, SPEED * dt)
-		end
-		return
-	end
-
--- ORBITAL
-	local angle = tick() * ORBIT_SPEED
-	local offset = Vector3.new(math.cos(angle)*ORBIT_RADIUS, ORBIT_HEIGHT, math.sin(angle)*ORBIT_RADIUS)
-	local destination = targetHRP.Position + offset
-	local move = destination - hrp.Position
-	if move.Magnitude > 0.1 then
-		hrp.CFrame = CFrame.new(hrp.Position + move.Unit * math.min(move.Magnitude, SPEED * dt), targetHRP.Position)
-	end
-	hrp.Velocity = Vector3.zero
-end)
-
---============================================================
--- SILENT AIM BOTÃO
---============================================================
-SilentBtn.MouseButton1Click:Connect(function()
-	SilentActive = not SilentActive
-	SilentBtn.Text = SilentActive and "Silent ON" or "Silent OFF"
-	SilentBtn.BackgroundColor3 = SilentActive and Color3.fromRGB(20,120,20) or Color3.fromRGB(120,10,10)
-end)
-
---============================================================
--- SILENT AIM GUI + CADEADO
---============================================================
-local SilentGui, Profile, ImageProfile, NamePlayers, HealthPlayers, Healthbar, Healthgreen, LockBtn
-
-local function GetClosestForSilent()
-	local myPos = LocalPlayer.Character and GetPart(LocalPlayer.Character).Position
-	if not myPos then return nil end
-	local closest, best = nil, math.huge
-	for _,p in pairs(Players:GetPlayers()) do
-		if p ~= LocalPlayer and p.Character and GetPart(p.Character) then
-			local hum = p.Character:FindFirstChildOfClass("Humanoid")
-			if hum and hum.Health > 0 then
-				local dist = (GetPart(p.Character).Position - myPos).Magnitude
-				if dist < best then
-					best = dist
-					closest = p
-				end
-			end
-		end
-	end
-	return closest
+if not TweenActive then return end
+if not SelectedPlayer or not SelectedPlayer.Character or not SelectedPlayer.Character:FindFirstChildOfClass("Humanoid") then
+Subiu = false
+return
 end
 
-local function CreateSilentGui()
-	if SilentGui then SilentGui:Destroy() end
+local hrp = GetPart(LocalPlayer.Character)  
+local targetHRP = GetPart(SelectedPlayer.Character)  
+if not hrp or not targetHRP then return end  
 
-SilentGui = Instance.new("Frame", Gui)
-	SilentGui.Size = UDim2.new(0,220,0,95)
-	SilentGui.Position = UDim2.new(0.03,0,0.4,0)
-	SilentGui.BackgroundColor3 = Color3.fromRGB(40,40,40)
-	SilentGui.Active = true
-	SilentGui.Draggable = true
-	Instance.new("UICorner", SilentGui)
-	Profile = Instance.new("Frame", SilentGui)
-	Profile.Size = UDim2.new(0,50,0,50)
-	Profile.Position = UDim2.new(0.02,0,0.1,0)
-	Profile.BackgroundColor3 = Color3.fromRGB(255,255,255)
-	Instance.new("UICorner", Profile)
+-- SUBIDA INICIAL  
+if not Subiu and AlturaSubida then  
+	local destino = Vector3.new(hrp.Position.X, AlturaSubida, hrp.Position.Z)  
+	local move = destino - hrp.Position  
+	if move.Magnitude < 1 then  
+		Subiu = true  
+	else  
+		hrp.CFrame = hrp.CFrame + move.Unit * math.min(move.Magnitude, SPEED_TWEEN * dt)  
+	end  
+	return  
+end  
 
-ImageProfile = Instance.new("ImageLabel", Profile)
-	ImageProfile.Size = UDim2.new(0,48,0,48)
-	ImageProfile.Position = UDim2.new(0,1,0,1)
-	Instance.new("UICorner", ImageProfile)
-	NamePlayers = Instance.new("TextLabel", Profile)
-	NamePlayers.Position = UDim2.new(1.3,0,0.05,0)
-	NamePlayers.Size = UDim2.new(0,140,0,20)
-	NamePlayers.BackgroundTransparency = 1
-	NamePlayers.TextColor3 = Color3.new(1,1,1)
-	NamePlayers.Font = Enum.Font.GothamBold
-	NamePlayers.TextSize = 16
+-- MODOS DE ORBITA DO TWEEN  
+if ORBIT_MODE_TWEEN == 1 then  
+	-- Orbita circular  
+	local angle = tick() * ORBIT_SPEED_TWEEN  
+	local offset = Vector3.new(math.cos(angle)*ORBIT_RADIUS, ORBIT_HEIGHT, math.sin(angle)*ORBIT_RADIUS)  
+	local destination = targetHRP.Position + offset  
+	local move = destination - hrp.Position  
+	if move.Magnitude > 0.1 then  
+		hrp.CFrame = CFrame.new(hrp.Position + move.Unit * math.min(move.Magnitude, SPEED_TWEEN * dt), targetHRP.Position)  
+	end  
+elseif ORBIT_MODE_TWEEN == 2 then  
+	-- Wazure (atrás do jogador, 2 studs)  
+	local backOffset = -targetHRP.CFrame.LookVector * 2 + Vector3.new(0,5,0)  
+	local destination = targetHRP.Position + backOffset  
+	local move = destination - hrp.Position  
+	if move.Magnitude > 0.1 then  
+		hrp.CFrame = CFrame.new(hrp.Position + move.Unit * math.min(move.Magnitude, SPEED_TWEEN * dt), targetHRP.Position)  
+	end  
+elseif ORBIT_MODE_TWEEN == 3 then  
+	-- Estrela acima da cabeça  
+	local t = tick()  
+	local points = 5  
+	local angle = (t * 5) % (2 * math.pi)  
+	local offset = Vector3.new(math.cos(angle*points)*ORBIT_RADIUS, 20, math.sin(angle*points)*ORBIT_RADIUS)  
+	local destination = targetHRP.Position + offset  
+	local move = destination - hrp.Position  
+	if move.Magnitude > 0.1 then  
+		hrp.CFrame = CFrame.new(hrp.Position + move.Unit * math.min(move.Magnitude, SPEED_TWEEN * dt), targetHRP.Position)  
+	end  
+end  
 
-  HealthPlayers = Instance.new("TextLabel", Profile)
-	HealthPlayers.Position = UDim2.new(1.3,0,0.45,0)
-	HealthPlayers.Size = UDim2.new(0,140,0,18)
-	HealthPlayers.BackgroundTransparency = 1
-	HealthPlayers.TextColor3 = Color3.new(1,1,1)
+hrp.Velocity = Vector3.zero
 
-  Healthbar = Instance.new("Frame", Profile)
-	Healthbar.Position = UDim2.new(1.3,0,0.8,0)
-	Healthbar.Size = UDim2.new(0,130,0,7)
-	Healthbar.BackgroundColor3 = Color3.fromRGB(40,40,40)
-	Instance.new("UICorner", Healthbar)
-	Healthgreen = Instance.new("Frame", Healthbar)
-	Healthgreen.Size = UDim2.new(1,0,1,0)
-	Healthgreen.BackgroundColor3 = Color3.fromRGB(0,220,100)
-	Instance.new("UICorner", Healthgreen)
-	LockBtn = Instance.new("TextButton", SilentGui)
-	LockBtn.Size = UDim2.new(0,35,0,35)
-	LockBtn.Position = UDim2.new(0.75,0,0.85,0)
-	LockBtn.Text = "🔓"
-	LockBtn.Font = Enum.Font.GothamBold
-	LockBtn.TextSize = 20
-	LockBtn.MouseButton1Click:Connect(function()
-		LOCKED = not LOCKED
-		LockBtn.Text = LOCKED and "🔒" or "🔓"
-	end)
-end
-
-RunService.RenderStepped:Connect(function()
-	if not SilentActive then
-		if SilentGui then SilentGui:Destroy(); SilentGui=nil end
-		aimbot_target = nil
-		return
-	end
-	if not SilentGui then CreateSilentGui() end
-	local target = LOCKED and last_target or GetClosestForSilent()
-	last_target = target
-	if target and target.Character then
-		aimbot_target = GetPart(target.Character).Position + Vector3.new(0,3,0)
-		NamePlayers.Text = "Name | "..target.DisplayName
-		HealthPlayers.Text = "Health | "..math.floor(target.Character.Humanoid.Health)
-		Healthgreen.Size = UDim2.new(target.Character.Humanoid.Health/target.Character.Humanoid.MaxHealth,0,1,0)
-		ImageProfile.Image = Players:GetUserThumbnailAsync(target.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size150x150)
-	end
 end)
 
---============================================================
--- HOOK SILENT AIM
---============================================================
-local old
-old = hookmetamethod(game, "__namecall", function(self,...)
-	local args = {...}
-	if aimbot_target and (getnamecallmethod()=="FireServer" or getnamecallmethod()=="InvokeServer") then
-		if typeof(args[1])=="Vector3" then args[1] = aimbot_target end
-		if typeof(args[2])=="Vector3" then args[2] = aimbot_target end
-	end
-	return old(self, unpack(args))
-end) 
---========================================================
--- SISTEMA KILL (BOTÃO DO HUB)
---========================================================
-
-local ORBIT_RADIUS = 15
-local ORBIT_HEIGHT = 15
-local UP_OFFSET = 30
-local MIN_LEVEL = 2100
-local ORBIT_SPEED = 5
-local ATTACK_DISTANCE = 40
-
+-- SISTEMA KILL LIMPO COM AUTO SKILL, AUTO EQUIP E NÍVEL MÍNIMO
 local KillActive = false
 local Subiu = false
 local AlturaSubida = nil
 local AutoSkill = true
-local Skillx, Skillz, Skillc = true, true, true
+local SkillX, SkillZ, SkillC = true, true, true
+
+local MIN_LEVEL = 2100
+local ATTACK_DISTANCE = 40
 
 local function GetPlayerLevel(player)
 	if player:FindFirstChild("Data") and player.Data:FindFirstChild("Level") then
@@ -740,11 +830,11 @@ local function GetPlayerLevel(player)
 end
 
 local function GetClosestKillPlayer()
-	local char = LocalPlayer.Character
-	if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-	local myPos = char.HumanoidRootPart.Position
+	local myPos = LocalPlayer.Character and GetPart(LocalPlayer.Character).Position
+	if not myPos then return nil end
+
 	local closest, dist = nil, math.huge
-	for _, plr in pairs(Players:GetPlayers()) do
+	for _,plr in pairs(Players:GetPlayers()) do
 		if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
 			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
 			local level = GetPlayerLevel(plr)
@@ -760,20 +850,75 @@ local function GetClosestKillPlayer()
 	return closest
 end
 
--- BOTÃO KILL
+-- Botão Kill
 KillBtn.MouseButton1Click:Connect(function()
-	KillActive = not KillActive
-	KillBtn.Text = KillActive and "Kill ON" or "Kill OFF"
-	KillBtn.BackgroundColor3 = KillActive and Color3.fromRGB(20,120,20) or Color3.fromRGB(120,10,10)
-	if KillActive then
+    KillActive = not KillActive
+    if KillActive then
+        KillBtn.BackgroundColor3 = Color3.fromRGB(0,255,0) -- fundo verde
+        KillBtn.TextColor3 = Color3.fromRGB(0,0,0)         -- texto preto
+        KillBtn.Text = "Kill ON"
+    else
+        KillBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)   -- fundo preto
+        KillBtn.TextColor3 = Color3.fromRGB(0,255,0)       -- texto verde
+        KillBtn.Text = "Kill OFF"
+    end
+end)
+
+    if KillActive then
+        SelectedPlayer = GetClosestKillPlayer()
+        local hrp = GetPart(LocalPlayer.Character)
+        if hrp then
+            AlturaSubida = hrp.Position.Y + UP_OFFSET_KILL
+        end
+        Subiu = false
+        Noclip(true)
+    else
+        Subiu = false
+        Noclip(false)
+    end
+end)
+
+-- Loop do Kill (movimento)
+RunService.Heartbeat:Connect(function(dt)
+	if not KillActive then return end
+
+	-- atualiza alvo se necessário
+	if not SelectedPlayer or not SelectedPlayer.Character or not SelectedPlayer.Character:FindFirstChildOfClass("Humanoid") 
+		or GetPlayerLevel(SelectedPlayer) < MIN_LEVEL 
+		or SelectedPlayer.Character.Humanoid.Health <= 0 then
 		SelectedPlayer = GetClosestKillPlayer()
 		Subiu = false
-		local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-		if hrp then AlturaSubida = hrp.Position.Y + UP_OFFSET end
-	else
-		SelectedPlayer = nil
-		AlturaSubida = nil
+		local hrp = GetPart(LocalPlayer.Character)
+		if hrp then AlturaSubida = hrp.Position.Y + UP_OFFSET_KILL end
+		return
 	end
+
+	local hrp = GetPart(LocalPlayer.Character)
+	local targetHRP = GetPart(SelectedPlayer.Character)
+	if not hrp or not targetHRP then return end
+
+	-- SUBIDA INICIAL
+	if not Subiu and AlturaSubida then
+		local destino = Vector3.new(hrp.Position.X, AlturaSubida, hrp.Position.Z)
+		local move = destino - hrp.Position
+		if move.Magnitude < 1 then
+			Subiu = true
+		else
+			hrp.CFrame = hrp.CFrame + move.Unit * math.min(move.Magnitude, SPEED_KILL * dt)
+		end
+		return
+	end
+
+	-- ORBITA
+	local angle = tick() * ORBIT_SPEED_KILL
+	local offset = Vector3.new(math.cos(angle)*ORBIT_RADIUS, ORBIT_HEIGHT, math.sin(angle)*ORBIT_RADIUS)
+	local destination = targetHRP.Position + offset
+	local move = destination - hrp.Position
+	if move.Magnitude > 0.1 then
+		hrp.CFrame = CFrame.new(hrp.Position + move.Unit * math.min(move.Magnitude, SPEED_KILL * dt), targetHRP.Position)
+	end
+
+	hrp.Velocity = Vector3.zero
 end)
 
 -- AUTO EQUIP GODHUMAN
@@ -794,135 +939,68 @@ task.spawn(function()
 	end
 end)
 
--- MOVIMENTO KILL
-RunService.Heartbeat:Connect(function(dt)
-	if not KillActive then return end
-	if not SelectedPlayer or not SelectedPlayer.Character 
-		or SelectedPlayer.Character:FindFirstChildOfClass("Humanoid").Health <= 0 
-		or GetPlayerLevel(SelectedPlayer) < MIN_LEVEL then
- 	SelectedPlayer = GetClosestKillPlayer()
-		Subiu = false
-		local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-		if hrp then AlturaSubida = hrp.Position.Y + UP_OFFSET end
-		return
-	end
-	local char = LocalPlayer.Character
-	local hrp = char and char:FindFirstChild("HumanoidRootPart")
-	local targetHRP = SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
-	if not hrp or not targetHRP then return end
-	if not Subiu and AlturaSubida then
-		local destino = Vector3.new(hrp.Position.X, AlturaSubida, hrp.Position.Z)
-		local move = destino - hrp.Position
-		local dist = move.Magnitude
-		if dist > 1 then
-			hrp.CFrame = hrp.CFrame + move.Unit * math.min(dist, SPEED * dt)
-		else
-			Subiu = true
-		end
-		return
-	end
-	local angle = tick() * ORBIT_SPEED
-	local offset = Vector3.new(
-		math.cos(angle) * ORBIT_RADIUS,
-		ORBIT_HEIGHT,
-		math.sin(angle) * ORBIT_RADIUS
-	)
-	local destination = targetHRP.Position + offset
-  local move = destination - hrp.Position
-	local dist = move.Magnitude
-
-if dist > 0.1 then
-		hrp.CFrame = CFrame.new(hrp.Position + move.Unit * math.min(dist, SPEED * dt), targetHRP.Position)
-	end
-	hrp.Velocity = Vector3.zero
-end)
-
 -- AUTO SKILL X Z C
 task.spawn(function()
 	while task.wait() do
 		if AutoSkill and KillActive and SelectedPlayer and SelectedPlayer.Character then
-			local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-			local targetHRP = SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+			local hrp = GetPart(LocalPlayer.Character)
+			local targetHRP = GetPart(SelectedPlayer.Character)
 			if hrp and targetHRP then
 				local distance = (hrp.Position - targetHRP.Position).Magnitude
 				if distance <= ATTACK_DISTANCE then
-					if Skillx then
-						VirtualInputManager:SendKeyEvent(true, "X", false, game)
+					if SkillX then
+						VirtualInputManager:SendKeyEvent(true,"X",false,game)
 						task.wait(0.1)
-						VirtualInputManager:SendKeyEvent(false, "X", false, game)
+						VirtualInputManager:SendKeyEvent(false,"X",false,game)
 					end
-					if Skillz then
-						VirtualInputManager:SendKeyEvent(true, "Z", false, game)
+					if SkillZ then
+						VirtualInputManager:SendKeyEvent(true,"Z",false,game)
 						task.wait(0.1)
-						VirtualInputManager:SendKeyEvent(false, "Z", false, game)
+						VirtualInputManager:SendKeyEvent(false,"Z",false,game)
 					end
-					if Skillc then
-						VirtualInputManager:SendKeyEvent(true, "C", false, game)
+					if SkillC then
+						VirtualInputManager:SendKeyEvent(true,"C",false,game)
 						task.wait(0.1)
-						VirtualInputManager:SendKeyEvent(false, "C", false, game)
+						VirtualInputManager:SendKeyEvent(false,"C",false,game)
 					end
 				end
 			end
 		end
 	end
 end)
---========================================================
--- FAST ATTACK (BOTÃO DO HUB)
---========================================================
 
---===============================
--- FAST ATTACK + FRUTAS | Divine
---===============================
+-- SILENT AIM BOTÃO
 
-local FastAttackActive = false
-local FRUIT_ACTIVE = false
-local MELEE_SPEED = 0.002
+SilentBtn.MouseButton1Click:Connect(function()
+    SilentActive = not SilentActive
+    if SilentActive then
+        SilentBtn.BackgroundColor3 = Color3.fromRGB(0,255,0) -- fundo verde
+        SilentBtn.TextColor3 = Color3.fromRGB(0,0,0)         -- texto preto
+        SilentBtn.Text = "Silent ON"
+    else
+        SilentBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)   -- fundo preto
+        SilentBtn.TextColor3 = Color3.fromRGB(0,255,0)       -- texto verde
+        SilentBtn.Text = "Silent OFF"
+    end
+end)
 
-local Modules = ReplicatedStorage:WaitForChild("Modules")
-local Net = Modules:WaitForChild("Net")
-local RegisterAttack = Net:WaitForChild("RE/RegisterAttack")
-local RegisterHit = Net:WaitForChild("RE/RegisterHit")
+-- SILENT AIM GUI + CADEADO
 
-local Fruits = {
-	"Kitsune-Kitsune","Pain-Pain","Blade-Blade",
-	"Mammoth-Mammoth","Gas-Gas","Tiger-Tiger",
-	"Yeti-Yeti","Dragon-Dragon"
-}
+local SilentGui, Profile, ImageProfile, NamePlayers, HealthPlayers, Healthbar, Healthgreen, LockBtn
 
-local function GetPart(m)
-	return m and (m:FindFirstChild("HumanoidRootPart") or m:FindFirstChild("Torso"))
-end
+local function GetClosestForSilent()
+	local myPos = LocalPlayer.Character and GetPart(LocalPlayer.Character).Position
+	if not myPos then return nil end
+	local closest, best = nil, math.huge
 
-local function GetClosestFastTarget(range)
-	local hrp = GetPart(LocalPlayer.Character)
-	if not hrp then return nil end
-
-local closest, dist = nil, range
-	-- PLAYERS
-	for _, plr in ipairs(Players:GetPlayers()) do
-		if plr ~= LocalPlayer and plr.Character then
-			local root = GetPart(plr.Character)
-			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-			if root and hum and hum.Health > 0 then
-				local d = (root.Position - hrp.Position).Magnitude
-				if d < dist then
-					dist = d
-					closest = plr.Character
-				end
-			end
-		end
-	end
-
--- NPCs
-	if workspace:FindFirstChild("Enemies") then
-		for _, npc in ipairs(workspace.Enemies:GetChildren()) do
-			local root = GetPart(npc)
-			local hum = npc:FindFirstChildOfClass("Humanoid")
-			if root and hum and hum.Health > 0 then
-				local d = (root.Position - hrp.Position).Magnitude
-				if d < dist then
-					dist = d
-					closest = npc
+	for _,p in pairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer and p.Character and GetPart(p.Character) then
+			local hum = p.Character:FindFirstChildOfClass("Humanoid")
+			if hum and hum.Health > 0 then
+				local dist = (GetPart(p.Character).Position - myPos).Magnitude
+				if dist < best then
+					best = dist
+					closest = p
 				end
 			end
 		end
@@ -930,56 +1008,259 @@ local closest, dist = nil, range
 	return closest
 end
 
--- LOOP PRINCIPAL FAST ATTACK + FRUTAS
-task.spawn(function()
-	while task.wait(0.01) do
-		if FastAttackActive then
-			local target = GetClosestFastTarget(9999)
-			if target then
-				-- FAST MELEE
-				pcall(function()
-					local p = GetPart(target)
-					if p then
-						RegisterAttack:FireServer(MELEE_SPEED)
-						RegisterHit:FireServer(p, {}, nil, "24057351")
-					end
-				end)
+local function CreateSilentGui()
+	if SilentGui then SilentGui:Destroy() end
 
--- FAST FRUIT
-				if FRUIT_ACTIVE then
-					pcall(function()
-						local p = GetPart(target)
-						if p then
-							local dir = (p.Position - workspace.CurrentCamera.CFrame.Position).Unit
-							for _, name in ipairs(Fruits) do
-								local tool = LocalPlayer.Backpack:FindFirstChild(name) or LocalPlayer.Character:FindFirstChild(name)
-								if tool then
-									local remote = tool:FindFirstChild("LeftClickRemote") or tool:FindFirstChildOfClass("RemoteEvent")
-									if remote then
-										remote:FireServer(dir,1,true)
-									end
-								end
+	SilentGui = Instance.new("Frame", Gui)
+	SilentGui.Size = UDim2.new(0,220,0,95)
+	SilentGui.Position = UDim2.new(0.03,0,0.4,0)
+	SilentGui.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	SilentGui.Active = true
+	SilentGui.Draggable = true
+	Instance.new("UICorner", SilentGui)
+
+	Profile = Instance.new("Frame", SilentGui)
+	Profile.Size = UDim2.new(0,50,0,50)
+	Profile.Position = UDim2.new(0.02,0,0.1,0)
+	Profile.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	Instance.new("UICorner", Profile)
+
+	ImageProfile = Instance.new("ImageLabel", Profile)
+	ImageProfile.Size = UDim2.new(0,48,0,48)
+	ImageProfile.Position = UDim2.new(0,1,0,1)
+	Instance.new("UICorner", ImageProfile)
+
+	NamePlayers = Instance.new("TextLabel", Profile)
+	NamePlayers.Position = UDim2.new(1.3,0,0.05,0)
+	NamePlayers.Size = UDim2.new(0,140,0,20)
+	NamePlayers.BackgroundTransparency = 1
+	NamePlayers.TextColor3 = Color3.new(1,1,1)
+	NamePlayers.Font = Enum.Font.GothamBold
+	NamePlayers.TextSize = 16
+
+	HealthPlayers = Instance.new("TextLabel", Profile)
+	HealthPlayers.Position = UDim2.new(1.3,0,0.45,0)
+	HealthPlayers.Size = UDim2.new(0,140,0,18)
+	HealthPlayers.BackgroundTransparency = 1
+	HealthPlayers.TextColor3 = Color3.new(1,1,1)
+
+	Healthbar = Instance.new("Frame", Profile)
+	Healthbar.Position = UDim2.new(1.3,0,0.8,0)
+	Healthbar.Size = UDim2.new(0,130,0,7)
+	Healthbar.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	Instance.new("UICorner", Healthbar)
+
+	Healthgreen = Instance.new("Frame", Healthbar)
+	Healthgreen.Size = UDim2.new(1,0,1,0)
+	Healthgreen.BackgroundColor3 = Color3.fromRGB(0,220,100)
+	Instance.new("UICorner", Healthgreen)
+
+	LockBtn = Instance.new("TextButton", SilentGui)
+	LockBtn.Size = UDim2.new(0,35,0,35)
+	LockBtn.Position = UDim2.new(0.75,0,0.85,0)
+	LockBtn.Text = "🔓"
+	LockBtn.Font = Enum.Font.GothamBold
+	LockBtn.TextSize = 20
+
+	LockBtn.MouseButton1Click:Connect(function()
+		LOCKED = not LOCKED
+		LockBtn.Text = LOCKED and "🔒" or "🔓"
+	end)
+end
+
+RunService.RenderStepped:Connect(function()
+	if not SilentActive then
+		if SilentGui then SilentGui:Destroy(); SilentGui=nil end
+		aimbot_target = nil
+		return
+	end
+
+	if not SilentGui then CreateSilentGui() end
+
+	local target = LOCKED and last_target or GetClosestForSilent()
+	last_target = target
+
+	if target and target.Character then
+		aimbot_target = GetPart(target.Character).Position + Vector3.new(0,3,0)
+		NamePlayers.Text = "Name | "..target.DisplayName
+		HealthPlayers.Text = "Health | "..math.floor(target.Character.Humanoid.Health)
+		Healthgreen.Size = UDim2.new(target.Character.Humanoid.Health/target.Character.Humanoid.MaxHealth,0,1,0)
+		ImageProfile.Image = Players:GetUserThumbnailAsync(target.UserId,Enum.ThumbnailType.HeadShot,Enum.ThumbnailSize.Size150x150)
+	end
+end)
+
+-- HOOK SILENT AIM
+
+local old
+old = hookmetamethod(game, "__namecall", function(self,...)
+	local args = {...}
+	if aimbot_target and (getnamecallmethod()=="FireServer" or getnamecallmethod()=="InvokeServer") then
+		if typeof(args[1])=="Vector3" then args[1] = aimbot_target end
+		if typeof(args[2])=="Vector3" then args[2] = aimbot_target end
+	end
+	return old(self, unpack(args))
+end) 
+
+-- FAST ATTACK + FRUTAS | Divine
+
+local FastAttackActive = false
+local FRUIT_ACTIVE = false
+local MELEE_SPEED = 0
+local RANGE = 9999
+local DELAY = 0
+local MAX_TARGETS = 3
+
+-- SERVICES
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+-- REMOTES
+
+local Modules = ReplicatedStorage:WaitForChild("Modules")
+local Net = Modules:WaitForChild("Net")
+local RegisterAttack = Net:WaitForChild("RE/RegisterAttack")
+local RegisterHit = Net:WaitForChild("RE/RegisterHit")
+
+-- FRUITS
+
+local Fruits = {
+	"Kitsune-Kitsune","Pain-Pain","Blade-Blade",
+	"Mammoth-Mammoth","Gas-Gas","Tiger-Tiger",
+	"Yeti-Yeti","Dragon-Dragon","Control-Control","T-rex-T-rex"
+}
+
+-- UTILS
+
+local function GetPart(m)
+	return m and (
+		m:FindFirstChild("HumanoidRootPart")
+		or m:FindFirstChild("Torso")
+		or m:FindFirstChild("UpperTorso")
+	)
+end
+
+local function GetHRP()
+	local char = LocalPlayer.Character
+	return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+local function InRange(part)
+	local hrp = GetHRP()
+	if not hrp or not part then return false end
+	return (hrp.Position - part.Position).Magnitude <= RANGE
+end
+
+-- GET TARGETS LIMITADOS
+
+local function GetLimitedTargets()
+	local targets = {}
+	local hrp = GetHRP()
+	if not hrp then return targets end
+
+	-- PLAYERS
+	for _,plr in ipairs(Players:GetPlayers()) do
+		if plr ~= LocalPlayer and plr.Character then
+			local part = GetPart(plr.Character)
+			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+			if part and hum and hum.Health > 0 and InRange(part) then
+				table.insert(targets, part)
+			end
+		end
+	end
+
+	-- NPCs
+	if workspace:FindFirstChild("Enemies") then
+		for _,npc in ipairs(workspace.Enemies:GetChildren()) do
+			local part = GetPart(npc)
+			local hum = npc:FindFirstChildOfClass("Humanoid")
+			if part and hum and hum.Health > 0 and InRange(part) then
+				table.insert(targets, part)
+			end
+		end
+	end
+
+	-- ORDENA PELOS MAIS PRÓXIMOS
+	table.sort(targets, function(a,b)
+		return (a.Position - hrp.Position).Magnitude < (b.Position - hrp.Position).Magnitude
+	end)
+
+	-- LIMITA A MAX_TARGETS
+	while #targets > MAX_TARGETS do
+		table.remove(targets)
+	end
+
+	return targets
+end
+
+-- FAST ATTACK LOOP
+
+task.spawn(function()
+	while true do
+		task.wait(DELAY)
+		if not FastAttackActive then continue end
+
+		local targets = GetLimitedTargets()
+		if #targets == 0 then continue end
+
+		-- ⚔️ Melee attack 1x
+		pcall(function()
+			RegisterAttack:FireServer(MELEE_SPEED)
+		end)
+
+		-- ⚔️ Ataca os 3 alvos de uma vez
+		for _,part in ipairs(targets) do
+			pcall(function()
+				RegisterHit:FireServer(part, {}, nil, "24057351")
+			end)
+		end
+
+		-- 🍎 FRUIT (opcional)
+		if FRUIT_ACTIVE then
+			pcall(function()
+				local camPos = workspace.CurrentCamera.CFrame.Position
+				for _,part in ipairs(targets) do
+					local dir = (part.Position - camPos).Unit
+
+					for _,name in ipairs(Fruits) do
+						local tool = LocalPlayer.Backpack:FindFirstChild(name)
+							or LocalPlayer.Character:FindFirstChild(name)
+
+						if tool then
+							local remote = tool:FindFirstChild("LeftClickRemote")
+								or tool:FindFirstChildOfClass("RemoteEvent")
+
+							if remote then
+								remote:FireServer(dir, 0, true)
 							end
 						end
-					end)
+					end
 				end
-			end
+			end)
 		end
 	end
 end)
 
--- BOTÃO FAST ATTACK
+
+-- BOTÃO FAST ATTACK EXISTENTE
+
 FastBtn.MouseButton1Click:Connect(function()
-	FastAttackActive = not FastAttackActive
-	FRUIT_ACTIVE = FastAttackActive -- liga/desliga junto o ataque de frutas
-	FastBtn.Text = FastAttackActive and "Fast ON" or "Fast OFF"
-	FastBtn.BackgroundColor3 = FastAttackActive and Color3.fromRGB(20,120,20) or Color3.fromRGB(120,10,10)
+    FastAttackActive = not FastAttackActive
+    FRUIT_ACTIVE = FastAttackActive -- FRUIT segue o FastAttack
+
+    if FastAttackActive then
+        FastBtn.BackgroundColor3 = Color3.fromRGB(0,255,0) -- fundo verde
+        FastBtn.TextColor3 = Color3.fromRGB(0,0,0)         -- texto preto
+        FastBtn.Text = "Fast ON"
+    else
+        FastBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)   -- fundo preto
+        FastBtn.TextColor3 = Color3.fromRGB(0,255,0)       -- texto verde
+        FastBtn.Text = "Fast OFF"
+    end
 end)
 
-
---========================================================
 -- WALK ON WATER (SEMPRE ATIVO)
---========================================================
 
 task.spawn(function()
 	while task.wait(0.5) do
@@ -993,32 +1274,35 @@ task.spawn(function()
 	end
 end)
 
--- =============================================
--- MISC HUB COMPLETO - BLOX FRUITS
--- =============================================
+-- misc
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+_G.MiscHub = _G.MiscHub or {}
+local M = _G.MiscHub
 
-local player = Players.LocalPlayer
+M.Players = M.Players or game:GetService("Players")
+M.RunService = M.RunService or game:GetService("RunService")
+M.UserInputService = M.UserInputService or game:GetService("UserInputService")
 
--- =============================================
--- VARIÁVEIS
--- =============================================
-local SpeedValor, JumpValor, FlyVelocidade = 30, 50, 50
-local SpeedAtivo, JumpAtivo, FlyAtivo = false, false, false
-local NoclipAtivo, AutoV4Ativo, AntiStunAtivo = false, false, false
-local MenuMinimizado = true
+M.player = M.Players.LocalPlayer
 
-local flyConnection, autoV4Connection, noclipConnection = nil, nil, nil
-local savedCanCollide = {}
+M.SpeedValor = M.SpeedValor or 30
+M.JumpValor = M.JumpValor or 50
+M.FlyVelocidade = M.FlyVelocidade or 50
+M.SpeedAtivo = M.SpeedAtivo or false
+M.JumpAtivo = M.JumpAtivo or false
+M.FlyAtivo = M.FlyAtivo or false
+M.NoclipAtivo = M.NoclipAtivo or false
+M.AutoV4Ativo = M.AutoV4Ativo or false
+M.AntiStunAtivo = M.AntiStunAtivo or false
+M.MenuMinimizado = M.MenuMinimizado or true
 
--- =============================================
--- FUNÇÕES BÁSICAS
--- =============================================
+M.flyConnection = M.flyConnection or nil
+M.autoV4Connection = M.autoV4Connection or nil
+M.noclipConnection = M.noclipConnection or nil
+M.savedCanCollide = M.savedCanCollide or {}
+
 local function getCharacter()
-    return player.Character or player.CharacterAdded:Wait()
+    return M.player.Character or M.player.CharacterAdded:Wait()
 end
 
 local function getHumanoid()
@@ -1030,94 +1314,81 @@ local function getRoot()
     return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
 end
 
--- =============================================
--- REMOVER GUI ANTIGO
--- =============================================
-if player.PlayerGui:FindFirstChild("MiscHub") then
-    player.PlayerGui.MiscHub:Destroy()
+if M.player.PlayerGui:FindFirstChild("MiscHub") then
+    M.player.PlayerGui.MiscHub:Destroy()
 end
 
--- =============================================
--- GUI PRINCIPAL
--- =============================================
-local gui = Instance.new("ScreenGui")
-gui.Name = "MiscHub"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+M.gui = Instance.new("ScreenGui")
+M.gui.Name = "MiscHub"
+M.gui.ResetOnSpawn = false
+M.gui.Parent = M.player:WaitForChild("PlayerGui")
 
-local menu = Instance.new("Frame", gui)
-menu.Size = UDim2.new(0,100,0,30)
-menu.Position = UDim2.new(0,150,0,10)
-menu.BackgroundColor3 = Color3.fromRGB(30,30,30)
-menu.Active = true
-menu.ClipsDescendants = true
-menu.Visible = false -- começa escondido
+M.menu = Instance.new("Frame", M.gui)
+M.menu.Size = UDim2.new(0,100,0,30)
+M.menu.Position = UDim2.new(0,150,0,10)
+M.menu.BackgroundColor3 = Color3.fromRGB(30,30,30)
+M.menu.Active = true
+M.menu.ClipsDescendants = true
+M.menu.Visible = false
 
-local title = Instance.new("TextButton", menu)
-title.Size = UDim2.new(1,0,0,30)
-title.BackgroundColor3 = Color3.fromRGB(20,20,20)
-title.Text = "MISC [+]"
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 16
-title.AutoButtonColor = false
+M.title = Instance.new("TextButton", M.menu)
+M.title.Size = UDim2.new(1,0,0,30)
+M.title.BackgroundColor3 = Color3.fromRGB(20,20,20)
+M.title.Text = "MISC [+]"
+M.title.TextColor3 = Color3.new(1,1,1)
+M.title.Font = Enum.Font.SourceSansBold
+M.title.TextSize = 16
+M.title.AutoButtonColor = false
 
--- =============================================
--- MINIMIZAR / MAXIMIZAR
--- =============================================
-title.MouseButton1Click:Connect(function()
-    MenuMinimizado = not MenuMinimizado
-    if MenuMinimizado then
-        menu.Size = UDim2.new(0,100,0,30)
-        title.Text = "MISC [+]"
+M.title.MouseButton1Click:Connect(function()
+    M.MenuMinimizado = not M.MenuMinimizado
+    if M.MenuMinimizado then
+        M.menu.Size = UDim2.new(0,100,0,30)
+        M.title.Text = "MISC [+]"
     else
-        menu.Size = UDim2.new(0,280,0,320)
-        title.Text = "MISC - BLOX FRUITS [-]"
+        M.menu.Size = UDim2.new(0,280,0,320)
+        M.title.Text = "MISC - BLOX FRUITS [-]"
     end
 end)
 
--- ARRASTAR MENU
-local dragging, dragStart, startPos = false, nil, nil
-title.InputBegan:Connect(function(input)
+M.dragging = false
+M.dragStart = nil
+M.startPos = nil
+
+M.title.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = menu.Position
+        M.dragging = true
+        M.dragStart = input.Position
+        M.startPos = M.menu.Position
     end
 end)
-title.InputEnded:Connect(function(input)
-    dragging = false
+
+M.title.InputEnded:Connect(function(input)
+    M.dragging = false
 end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        menu.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+
+M.UserInputService.InputChanged:Connect(function(input)
+    if M.dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - M.dragStart
+        M.menu.Position = UDim2.new(
+            M.startPos.X.Scale, M.startPos.X.Offset + delta.X,
+            M.startPos.Y.Scale, M.startPos.Y.Offset + delta.Y
         )
     end
 end)
 
--- =============================================
--- BOTÃO FLUTUANTE PARA MOSTRAR/ESCONDER MENU
--- =============================================
 MiscBtn.MouseButton1Click:Connect(function()
-    if menu.Visible then
-        menu.Visible = false
-    else
-        menu.Visible = true
-        MenuMinimizado = true
-        menu.Size = UDim2.new(0,100,0,30)
-        title.Text = "MISC [+]"
-    end
+    M.menu.Visible = not M.menu.Visible
+    M.menuMinimizado = true
+    M.menu.Size = UDim2.new(0,100,0,30)
+    M.title.Text = "MISC [+]"
+    MiscBtn.BackgroundColor3 = M.menu.Visible and Color3.fromRGB(0,255,0) or Color3.fromRGB(0,0,0)
+    MiscBtn.TextColor3 = M.menu.Visible and Color3.fromRGB(0,0,0) or Color3.fromRGB(0,255,0)
 end)
 
--- =============================================
--- BOTÃO TOGGLE
--- =============================================
 local function criarBotaoToggle(textoBase, pos, estadoInicial, callback)
     local estado = estadoInicial
-    local botao = Instance.new("TextButton", menu)
+    local botao = Instance.new("TextButton", M.menu)
     botao.Size = UDim2.new(0,120,0,30)
     botao.Position = pos
     botao.BackgroundColor3 = Color3.fromRGB(60,60,60)
@@ -1135,11 +1406,9 @@ local function criarBotaoToggle(textoBase, pos, estadoInicial, callback)
     end)
     return botao
 end
--- =============================================
--- SLIDER
--- =============================================
+
 local function criarSlider(nome, posY, min, max, valorInicial, callback)
-    local label = Instance.new("TextLabel", menu)
+    local label = Instance.new("TextLabel", M.menu)
     label.Size = UDim2.new(1,-20,0,20)
     label.Position = UDim2.new(0,10,0,posY)
     label.Text = nome.." ("..valorInicial..")"
@@ -1148,27 +1417,27 @@ local function criarSlider(nome, posY, min, max, valorInicial, callback)
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 13
 
-  local barra = Instance.new("Frame", menu)
+    local barra = Instance.new("Frame", M.menu)
     barra.Size = UDim2.new(1,-20,0,14)
     barra.Position = UDim2.new(0,10,0,posY+22)
     barra.BackgroundColor3 = Color3.fromRGB(70,70,70)
 
-   local fill = Instance.new("Frame", barra)
+    local fill = Instance.new("Frame", barra)
     fill.Size = UDim2.new((valorInicial-min)/(max-min),0,1,0)
     fill.BackgroundColor3 = Color3.fromRGB(0,170,255)
 
-   local segurando = false
+    local segurando = false
     barra.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             segurando = true
         end
     end)
-    UserInputService.InputEnded:Connect(function(input)
+    M.UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             segurando = false
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
+    M.UserInputService.InputChanged:Connect(function(input)
         if segurando and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local pos = math.clamp((input.Position.X - barra.AbsolutePosition.X) / barra.AbsoluteSize.X, 0, 1)
             fill.Size = UDim2.new(pos,0,1,0)
@@ -1180,14 +1449,10 @@ local function criarSlider(nome, posY, min, max, valorInicial, callback)
     return fill
 end
 
--- SLIDERS
-local fillVelocidade = criarSlider("Velocidade", 40, 30, 400, SpeedValor, function(v) SpeedValor = v end)
-local fillPulo = criarSlider("Pulo", 80, 50, 400, JumpValor, function(v) JumpValor = v end)
-local fillFly = criarSlider("Fly Speed", 120, 50, 1000, FlyVelocidade, function(v) FlyVelocidade = v end)
+local fillVelocidade = criarSlider("Velocidade", 40, 30, 400, M.SpeedValor, function(v) M.SpeedValor = v end)
+local fillPulo = criarSlider("Pulo", 80, 50, 400, M.JumpValor, function(v) M.JumpValor = v end)
+local fillFly = criarSlider("Fly Speed", 120, 50, 1000, M.FlyVelocidade, function(v) M.FlyVelocidade = v end)
 
--- =============================================
--- FUNÇÕES FLY
--- =============================================
 local function startFly()
     local chr, hum, root = getCharacter(), getHumanoid(), getRoot()
     if not root then return end
@@ -1196,11 +1461,11 @@ local function startFly()
     BV.Name = "FlyBV"; BV.MaxForce = Vector3.new(1e9,1e9,1e9); BV.Velocity = Vector3.new(0,0,0)
     local BG = root:FindFirstChild("FlyBG") or Instance.new("BodyGyro", root)
     BG.Name = "FlyBG"; BG.MaxTorque = Vector3.new(1e9,1e9,1e9); BG.P = 9e4; BG.CFrame = root.CFrame
-    flyConnection = RunService.RenderStepped:Connect(function()
+    M.flyConnection = M.RunService.RenderStepped:Connect(function()
         local moveDir = hum.MoveDirection
         local cam = workspace.CurrentCamera
         local localDir = cam.CFrame:VectorToObjectSpace(moveDir)
-        local velocity = cam.CFrame.RightVector * localDir.X * FlyVelocidade + cam.CFrame.LookVector * (-localDir.Z) * FlyVelocidade
+        local velocity = cam.CFrame.RightVector * localDir.X * M.FlyVelocidade + cam.CFrame.LookVector * (-localDir.Z) * M.FlyVelocidade
         BV.Velocity = velocity
         if velocity.Magnitude > 0 then
             BG.CFrame = CFrame.new(root.Position, root.Position + velocity)
@@ -1211,8 +1476,8 @@ local function startFly()
 end
 
 local function stopFly()
-    FlyAtivo = false
-    if flyConnection then flyConnection:Disconnect() end
+    M.FlyAtivo = false
+    if M.flyConnection then M.flyConnection:Disconnect() end
     local hum, root = getHumanoid(), getRoot()
     if hum then hum.PlatformStand = false end
     if root then
@@ -1223,16 +1488,13 @@ local function stopFly()
     end
 end
 
--- =============================================
--- FUNÇÕES NOCOLIP
--- =============================================
 local function AtivarNoclip()
-    if noclipConnection then return end
-    noclipConnection = RunService.Stepped:Connect(function()
+    if M.noclipConnection then return end
+    M.noclipConnection = M.RunService.Stepped:Connect(function()
         local char = getCharacter()
         for _,v in ipairs(char:GetDescendants()) do
             if v:IsA("BasePart") then
-                if savedCanCollide[v] == nil then savedCanCollide[v] = v.CanCollide end
+                if M.savedCanCollide[v] == nil then M.savedCanCollide[v] = v.CanCollide end
                 v.CanCollide = false
             end
         end
@@ -1240,46 +1502,42 @@ local function AtivarNoclip()
 end
 
 local function DesativarNoclip()
-    if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
-    for part,orig in pairs(savedCanCollide) do
+    if M.noclipConnection then M.noclipConnection:Disconnect(); M.noclipConnection = nil end
+    for part,orig in pairs(M.savedCanCollide) do
         if part and part.Parent then pcall(function() part.CanCollide = orig end) end
     end
-    savedCanCollide = {}
+    M.savedCanCollide = {}
 end
 
--- =============================================
--- FUNÇÕES AUTO V4
--- =============================================
 local function ToggleAutoV4(v)
     if v then
         local lastTime = 0
-        autoV4Connection = RunService.Heartbeat:Connect(function(step)
+        M.autoV4Connection = M.RunService.Heartbeat:Connect(function(step)
             lastTime = lastTime + step
             if lastTime >= 1 then
                 lastTime = 0
                 pcall(function()
-                    local Event = player.Backpack:FindFirstChild("Awakening") and player.Backpack.Awakening:FindFirstChild("RemoteFunction")
+                    local Event = M.player.Backpack:FindFirstChild("Awakening") and M.player.Backpack.Awakening:FindFirstChild("RemoteFunction")
                     if Event then Event:InvokeServer(true) end
                 end)
             end
         end)
     else
-        if autoV4Connection then autoV4Connection:Disconnect(); autoV4Connection=nil end
+        if M.autoV4Connection then M.autoV4Connection:Disconnect(); M.autoV4Connection=nil end
     end
 end
 
--- =============================================
--- FUNÇÕES ANTI-STUN + RESET REAL
--- =============================================
-local AntiAtivo = false
-local heartbeatConn, descendantConn = nil, nil
-local moverClassesRagdoll = {
+M.AntiAtivo = M.AntiAtivo or false
+M.heartbeatConn = M.heartbeatConn or nil
+M.descendantConn = M.descendantConn or nil
+
+M.moverClassesRagdoll = M.moverClassesRagdoll or {
 "BodyVelocity","BodyPosition","BodyGyro","BodyAngularVelocity",
 "BodyForce","LinearVelocity","AlignPosition","AlignOrientation","VectorForce"
 }
 
 local function isMoverRagdoll(obj)
-    for _, c in ipairs(moverClassesRagdoll) do
+    for _, c in ipairs(M.moverClassesRagdoll) do
         if obj:IsA(c) then return true end
     end
     return false
@@ -1303,49 +1561,46 @@ local function forcarHumanoidRagdoll(char)
 end
 
 local function loopRagdoll()
-    if not AntiAtivo then return end
+    if not M.AntiAtivo then return end
     local char = getCharacter()
     limparForcasRagdoll(char)
     forcarHumanoidRagdoll(char)
 end
 
 local function onDescAddedRagdoll(obj)
-    if not AntiAtivo then return end
+    if not M.AntiAtivo then return end
     if isMoverRagdoll(obj) then pcall(function() obj:Destroy() end) end
 end
 
 local function ativarRagdoll()
-    if AntiAtivo then return end
-    AntiAtivo = true
+    if M.AntiAtivo then return end
+    M.AntiAtivo = true
     local char = getCharacter()
     limparForcasRagdoll(char)
     forcarHumanoidRagdoll(char)
-    descendantConn = char.DescendantAdded:Connect(onDescAddedRagdoll)
-    heartbeatConn = RunService.Heartbeat:Connect(loopRagdoll)
+    M.descendantConn = char.DescendantAdded:Connect(onDescAddedRagdoll)
+    M.heartbeatConn = M.RunService.Heartbeat:Connect(loopRagdoll)
 end
 
 local function desativarRagdoll()
-    if not AntiAtivo then return end
-    AntiAtivo = false
-    if heartbeatConn then heartbeatConn:Disconnect(); heartbeatConn=nil end
-    if descendantConn then descendantConn:Disconnect(); descendantConn=nil end
-    pcall(function() player.Character:BreakJoints() end)
+    if not M.AntiAtivo then return end
+    M.AntiAtivo = false
+    if M.heartbeatConn then M.heartbeatConn:Disconnect(); M.heartbeatConn=nil end
+    if M.descendantConn then M.descendantConn:Disconnect(); M.descendantConn=nil end
+    pcall(function() M.player.Character:BreakJoints() end)
 end
 
--- =============================================
--- BOTÕES
--- =============================================
-local btnSpeed = criarBotaoToggle("Speed", UDim2.new(0,10,0,160), false, function(v) SpeedAtivo = v end)
+local btnSpeed = criarBotaoToggle("Speed", UDim2.new(0,10,0,160), false, function(v) M.SpeedAtivo = v end)
 local btnJump = criarBotaoToggle("Jump", UDim2.new(0,150,0,160), false, function(v)
-    JumpAtivo = v
+    M.JumpAtivo = v
     if not v then getHumanoid().JumpPower = 50 end
 end)
 local btnFly = criarBotaoToggle("Fly", UDim2.new(0,10,0,200), false, function(v)
-    FlyAtivo = v
+    M.FlyAtivo = v
     if v then startFly() else stopFly() end
 end)
 local btnNoclip = criarBotaoToggle("Noclip", UDim2.new(0,150,0,200), false, function(v)
-    NoclipAtivo = v
+    M.NoclipAtivo = v
     if v then AtivarNoclip() else DesativarNoclip() end
 end)
 local btnAutoV4 = criarBotaoToggle("Auto V4", UDim2.new(0,10,0,240), false, ToggleAutoV4)
@@ -1353,12 +1608,169 @@ local btnAntiStun = criarBotaoToggle("Anti-Stun", UDim2.new(0,150,0,240), false,
     if v then ativarRagdoll() else desativarRagdoll() end
 end)
 
--- =============================================
--- LOOP PRINCIPAL
--- =============================================
-RunService.RenderStepped:Connect(function()
+M.RunService.RenderStepped:Connect(function()
     local hum = getHumanoid()
     if not hum then return end
-    if SpeedAtivo then hum.WalkSpeed = SpeedValor end
-    if JumpAtivo then hum.JumpPower = JumpValor end
+    if M.SpeedAtivo then hum.WalkSpeed = M.SpeedValor end
+    if M.JumpAtivo then hum.JumpPower = M.JumpValor end
 end)
+
+M.player.CharacterAdded:Connect(function()
+    desativarRagdoll()
+    DesativarNoclip()
+    stopFly()
+end)
+
+
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local StarterGui = game:GetService("StarterGui")
+
+local lp = Players.LocalPlayer
+
+-- CFRAMES
+local CF_SAFE  = CFrame.new(-6508.55811, 83.3668747, -132.839996)
+local CF_BASE  = CFrame.new(-316.895142, 332.040527, 584.296082)
+local CF_FINAL = CFrame.new(-397.918396, 149.399918, 291.235199)
+
+-- STATE
+local auto = false
+local escaped = false
+local upConn = nil
+local mainConn = nil
+
+local char, hum, hrp
+
+-- NOTIFY
+local function notify(txt)
+	pcall(function()
+		StarterGui:SetCore("SendNotification", {
+			Title = "AUTO FUGIR 🍌",
+			Text = txt,
+			Duration = 2
+		})
+	end)
+end
+
+-- UTILS
+local function forceTP(cf)
+	if hrp then
+		hrp.CFrame = cf
+	end
+end
+
+local function stopTPUp()
+	if upConn then
+		upConn:Disconnect()
+		upConn = nil
+	end
+end
+
+local function startTPUp()
+	if upConn or not hrp then return end
+	upConn = RunService.Heartbeat:Connect(function()
+		if hrp then
+			hrp.CFrame = hrp.CFrame + Vector3.new(0, 99999, 0)
+		end
+	end)
+end
+
+local function tweenToFinal()
+	if not hrp then return end
+	local dist = (hrp.Position - CF_FINAL.Position).Magnitude
+	local t = dist / 350
+	TweenService:Create(
+		hrp,
+		TweenInfo.new(t, Enum.EasingStyle.Linear),
+		{CFrame = CF_FINAL}
+	):Play()
+end
+
+-- AUTO LOGIC
+local function escapeNow()
+	if escaped then return end
+	escaped = true
+	forceTP(CF_SAFE)
+	startTPUp()
+	notify("FUGINDO ☠️")
+end
+
+local function setAuto(state)
+	auto = state
+	escaped = false
+	stopTPUp()
+
+if AuraBtn then
+    if state then
+        AuraBtn.BackgroundColor3 = Color3.fromRGB(0,255,0) -- fundo verde
+        AuraBtn.TextColor3 = Color3.fromRGB(0,0,0)         -- texto preto
+        AuraBtn.Text = "Aura 🍌 ON"
+    else
+        AuraBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)   -- fundo preto
+        AuraBtn.TextColor3 = Color3.fromRGB(0,255,0)       -- texto verde
+        AuraBtn.Text = "Aura 🍌 OFF"
+    end
+end
+
+	if not state then
+		task.spawn(function()
+			forceTP(CF_BASE)
+			task.wait(0.15)
+			tweenToFinal()
+		end)
+		notify("DESATIVADO")
+	else
+		notify("TP ONLY ATIVO 🍌")
+	end
+end
+
+-- MAIN LOOP (SÓ 1, SEM WAIT)
+mainConn = RunService.Heartbeat:Connect(function()
+	if not auto or not hum then return end
+
+	local hp = hum.Health / hum.MaxHealth
+
+	if hp <= 0.4 then
+		escapeNow()
+	elseif escaped and hp >= 0.6 then
+		escaped = false
+		stopTPUp()
+		task.spawn(function()
+			forceTP(CF_BASE)
+			task.wait(0.15)
+			tweenToFinal()
+		end)
+		notify("SEGURO ✅")
+	end
+end)
+
+-- BUTTON
+if AuraBtn then
+	AuraBtn.MouseButton1Click:Connect(function()
+		setAuto(not auto)
+	end)
+end
+
+-- RESPAWN (LIMPO, SEM ATIVAR NADA)
+local function onCharacter(charNew)
+	char = charNew
+	hum = char:WaitForChild("Humanoid")
+	hrp = char:WaitForChild("HumanoidRootPart")
+
+	stopTPUp()
+	escaped = false
+	auto = false
+
+	if AuraBtn then
+		AuraBtn.Text = "Aura 🍌 OFF"
+		AuraBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	end
+end
+
+lp.CharacterAdded:Connect(onCharacter)
+
+if lp.Character then
+	onCharacter(lp.Character)
+end
